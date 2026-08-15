@@ -69,13 +69,14 @@ def get_task(task_id: str) -> TaskResponse:
 
 @app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
-    if payload.status is not None:
-        existing = storage.get_task_by_id(task_id)
-        if existing is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Task with id {task_id} not found",
-            )
+    existing = storage.get_task_by_id(task_id)
+    if existing is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task with id {task_id} not found",
+        )
+
+    if payload.status is not None and payload.status != existing.status:
         validate_status_transition(existing.status, payload.status)
 
     updated = storage.update_task(task_id, payload)

@@ -117,6 +117,15 @@ def test_patch_same_status_returns_422(client, created_task):
     assert r.status_code == 422
 
 
+def test_patch_priority_only_update_succeeds_without_status_error(client, created_task):
+    task_id = created_task["id"]
+    r = client.patch(f"/tasks/{task_id}", json={"priority": "High"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["priority"] == "High"
+    assert body["status"] == created_task["status"]
+
+
 def test_delete_existing_returns_204_no_body(client, created_task):
     task_id = created_task["id"]
     r = client.delete(f"/tasks/{task_id}")
@@ -128,3 +137,19 @@ def test_delete_missing_returns_404(client):
     r = client.delete("/tasks/does-not-exist")
     assert r.status_code == 404
     assert r.json()["detail"] == "Task with id does-not-exist not found"
+
+
+def test_patch_empty_json_object_body_returns_422_and_error_detail(client):
+    # Arrange: create a task to update
+    create_r = client.post("/tasks", json={"title": "Task for empty patch"})
+    assert create_r.status_code == 201
+    task = create_r.json()
+    task_id = task["id"]
+
+    # Act: send an empty JSON object as the PATCH body
+    r = client.patch(f"/tasks/{task_id}", json={})
+
+    # Assert: empty update is treated as no-op and returns the existing task
+    assert r.status_code == 200
+    body = r.json()
+    assert body == task

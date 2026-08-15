@@ -6,16 +6,23 @@
     <title>Task Board</title>
     <style>
         :root {
-            --bg: #f4f6f8;
-            --card: #ffffff;
-            --muted: #6b7280;
-            --accent: #3b82f6;
+            --bg: #edf4ff;
+            --bg-strong: #dfeaff;
+            --surface: rgba(255, 255, 255, 0.82);
+            --surface-strong: #ffffff;
+            --panel: #f8fbff;
+            --muted: #5d6b82;
+            --muted-soft: #8ca0b9;
+            --accent: #4f46e5;
+            --accent-strong: #3d2fe7;
+            --accent-soft: rgba(79, 70, 229, 0.12);
             --danger: #ef4444;
             --warning: #f59e0b;
             --success: #16a34a;
-            --border: #e6eef6;
-            --shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-            --gap: 16px;
+            --border: rgba(148, 163, 184, 0.22);
+            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            --shadow-soft: 0 8px 18px rgba(79, 70, 229, 0.08);
+            --gap: 18px;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
@@ -23,42 +30,48 @@
 
         body {
             margin: 0;
-            background: var(--bg);
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 28%),
+                linear-gradient(180deg, #edf4ff 0%, #f8fbff 100%);
             color: #0f172a;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         .app-header {
-            background: #fff;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.03);
         }
 
         .app-header .container {
-            max-width: 1100px;
+            max-width: 1140px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px 22px;
         }
 
         h1 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: clamp(1.4rem, 2vw, 1.85rem);
+            letter-spacing: -0.04em;
         }
 
         .subtitle {
-            margin: 6px 0 0;
+            margin: 8px 0 0;
             color: var(--muted);
             font-size: 0.95rem;
         }
 
         main {
-            max-width: 1100px;
-            margin: 20px auto;
-            padding: 0 20px;
+            max-width: 1140px;
+            margin: 24px auto;
+            padding: 0 22px 28px;
         }
 
         .board {
             display: grid;
-            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            grid-template-columns: repeat(3, minmax(240px, 1fr));
             gap: var(--gap);
             align-items: start;
         }
@@ -68,24 +81,47 @@
         }
 
         .column-header {
-            background: #fff;
-            padding: 12px 14px;
-            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,251,255,0.92));
+            padding: 14px 16px;
             border: 1px solid var(--border);
             border-bottom: 0;
+            border-radius: 14px 14px 0 0;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
         }
 
         .column-header h2 {
             margin: 0;
-            font-size: 1rem;
+            font-size: 0.96rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .column-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(79, 70, 229, 0.14);
         }
 
         .column-body {
-            background: linear-gradient(180deg, #fafbfd, #ffffff);
+            background: rgba(255, 255, 255, 0.45);
             padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 0 0 8px 8px;
-            min-height: 160px;
+            border-radius: 0 0 14px 14px;
+            min-height: 180px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
         }
 
         .empty-column-message {
@@ -93,20 +129,28 @@
             align-items: center;
             justify-content: center;
             min-height: 110px;
-            color: #94a3b8;
+            color: var(--muted-soft);
             font-size: 0.9rem;
-            border: 1px dashed #dfe7f1;
-            border-radius: 8px;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            border-radius: 12px;
             background: rgba(148, 163, 184, 0.03);
+            letter-spacing: 0.01em;
         }
 
         .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
+            background: var(--surface-strong);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 12px;
+            padding: 14px 14px 12px;
             margin-bottom: 12px;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08);
+            border-color: rgba(79, 70, 229, 0.2);
         }
 
         .card:last-child {
@@ -114,24 +158,25 @@
         }
 
         .card-title {
-            margin: 0 0 6px;
-            font-size: 0.98rem;
+            margin: 0 0 8px;
+            font-size: 1rem;
+            letter-spacing: -0.02em;
         }
 
         .card-desc {
-            margin: 0 0 10px;
+            margin: 0 0 12px;
             color: var(--muted);
-            font-size: 0.9rem;
-            line-height: 1.4;
+            font-size: 0.88rem;
+            line-height: 1.5;
         }
 
         .card-meta {
             display: flex;
             gap: 8px;
             align-items: center;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--muted);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
         }
 
@@ -139,28 +184,36 @@
             display: inline-block;
             padding: 4px 8px;
             border-radius: 999px;
-            font-weight: 600;
+            font-weight: 700;
             background: #f1f5f9;
             color: #0f172a;
             line-height: 1.25;
+            letter-spacing: 0.01em;
         }
 
         .badge.priority-high {
-            background: #fee2e2;
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.08);
+            background: #ffe4e6;
+            color: #b42318;
+            border: 1px solid rgba(239, 68, 68, 0.14);
         }
 
         .badge.priority-medium {
-            background: #fff7ed;
-            color: #ea580c;
-            border: 1px solid rgba(234, 88, 12, 0.06);
+            background: #fff1d6;
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.14);
         }
 
         .badge.priority-low {
-            background: #ecfccb;
-            color: #65a30d;
-            border: 1px solid rgba(101, 163, 13, 0.06);
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid rgba(34, 197, 94, 0.15);
+        }
+
+        .assignee {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .card-actions {
@@ -169,23 +222,26 @@
         }
 
         .edit-button {
-            background: transparent;
-            border: 1px solid var(--border);
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            background: rgba(79, 70, 229, 0.04);
+            border: 1px solid rgba(79, 70, 229, 0.12);
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
             cursor: pointer;
-            color: #334155;
+            color: var(--accent);
+            font-weight: 600;
+            transition: background 0.2s ease, border-color 0.2s ease;
         }
 
         .edit-button:hover {
-            border-color: var(--accent);
-            color: var(--accent);
+            background: rgba(79, 70, 229, 0.08);
+            border-color: rgba(79, 70, 229, 0.25);
         }
 
         .loading-skeleton {
             display: grid;
             gap: 12px;
+            padding: 4px 2px;
         }
 
         .loading-skeleton .line {
@@ -205,12 +261,12 @@
         }
 
         .error-card {
-            background: #fff5f5;
+            background: linear-gradient(180deg, #fff5f5, #fff);
             border: 1px solid #fecaca;
             color: #991b1b;
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: var(--shadow);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: var(--shadow-soft);
             font-size: 0.92rem;
         }
 
@@ -225,23 +281,30 @@
         .modal-submit,
         .modal-cancel,
         .modal-close {
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font: inherit;
         }
 
         .new-task-button {
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
             color: #fff;
-            border: 1px solid var(--accent);
-            padding: 10px 14px;
-            font-weight: 600;
+            border: 1px solid transparent;
+            padding: 10px 16px;
+            font-weight: 700;
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .new-task-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 30px rgba(79, 70, 229, 0.25);
         }
 
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.45);
+            background: rgba(15, 23, 42, 0.48);
             display: none;
             align-items: center;
             justify-content: center;
@@ -255,11 +318,12 @@
 
         .modal {
             width: min(540px, 100%);
-            background: #fff;
+            background: rgba(255, 255, 255, 0.96);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+            border-radius: 18px;
+            box-shadow: 0 28px 52px rgba(15, 23, 42, 0.22);
             overflow: hidden;
+            backdrop-filter: blur(12px);
         }
 
         .modal-header {
@@ -269,15 +333,17 @@
             gap: 12px;
             padding: 18px 20px;
             border-bottom: 1px solid var(--border);
+            background: rgba(248, 251, 255, 0.9);
         }
 
         .modal-header h2 {
             margin: 0;
             font-size: 1.15rem;
+            letter-spacing: -0.03em;
         }
 
         .modal-close {
-            background: transparent;
+            background: rgba(15, 23, 42, 0.02);
             border: 1px solid var(--border);
             width: 32px;
             height: 32px;
@@ -294,7 +360,7 @@
             background: #fff5f5;
             border: 1px solid #fecaca;
             color: #991b1b;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 10px 12px;
             margin-bottom: 16px;
             font-size: 0.9rem;
@@ -317,7 +383,7 @@
         .field span {
             display: block;
             margin-bottom: 7px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.92rem;
         }
 
@@ -325,19 +391,21 @@
         .field textarea,
         .field select {
             width: 100%;
-            border: 1px solid #d9e3ee;
-            border-radius: 8px;
-            padding: 10px 12px;
+            border: 1px solid #dce7f3;
+            border-radius: 10px;
+            padding: 11px 12px;
             font: inherit;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.9);
             color: #0f172a;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .field input:focus,
         .field textarea:focus,
         .field select:focus {
-            outline: 2px solid rgba(59, 130, 246, 0.18);
-            border-color: var(--accent);
+            outline: none;
+            border-color: rgba(79, 70, 229, 0.45);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
         }
 
         .field textarea {
@@ -361,7 +429,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 22px;
         }
 
         .modal-cancel,
@@ -370,19 +438,19 @@
             border: 1px solid var(--border);
             background: #fff;
             color: #334155;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .modal-submit {
-            background: var(--accent);
-            border-color: var(--accent);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+            border-color: transparent;
             color: #fff;
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
         }
 
-        /* Drag-and-drop visual states */
         .column-body.drag-over {
-            outline: 2px dashed rgba(59, 130, 246, 0.35);
-            background: rgba(59, 130, 246, 0.02);
+            outline: 2px dashed rgba(79, 70, 229, 0.3);
+            background: rgba(79, 70, 229, 0.03);
         }
 
         .card.dragging {
@@ -402,7 +470,7 @@
 
             .app-header .container,
             main {
-                padding: 12px;
+                padding: 12px 14px;
             }
         }
     </style>
@@ -422,17 +490,26 @@
         <section id="board" class="board" aria-label="Task board">
 
             <div class="column" data-status="ToDo">
-                <div class="column-header" aria-hidden="false"><h2>To Do</h2></div>
+                <div class="column-header" aria-hidden="false">
+                    <h2>To Do</h2>
+                    <span class="column-count">0</span>
+                </div>
                 <div class="column-body"></div>
             </div>
 
             <div class="column" data-status="InProgress">
-                <div class="column-header"><h2>In Progress</h2></div>
+                <div class="column-header">
+                    <h2>In Progress</h2>
+                    <span class="column-count">0</span>
+                </div>
                 <div class="column-body"></div>
             </div>
 
             <div class="column" data-status="Done">
-                <div class="column-header"><h2>Done</h2></div>
+                <div class="column-header">
+                    <h2>Done</h2>
+                    <span class="column-count">0</span>
+                </div>
                 <div class="column-body"></div>
             </div>
 
@@ -601,6 +678,19 @@
             return article;
         }
 
+        function updateColumnCounts(allTasks) {
+            STATUSES.forEach((status) => {
+                const column = document.querySelector(`.column[data-status="${status}"]`);
+                if (!column) return;
+
+                const count = allTasks.filter((task) => String(task.status) === status).length;
+                const badge = column.querySelector('.column-count');
+                if (badge) {
+                    badge.textContent = String(count);
+                }
+            });
+        }
+
         function renderBoard(allTasks) {
             STATUSES.forEach((status) => {
                 const column = document.querySelector(`.column[data-status="${status}"]`);
@@ -617,6 +707,8 @@
                         if (pa !== pb) return pa - pb;
                         return Number(a.id) - Number(b.id);
                     });
+
+                updateColumnCounts(allTasks);
 
                 if (items.length === 0) {
                     const empty = document.createElement('div');
@@ -665,6 +757,7 @@
                 }
 
                 tasks = data;
+                clearTopError();
                 boardState = 'ready';
                 render(boardState);
             } catch (error) {
@@ -845,6 +938,7 @@
                 });
 
                 if (response.ok) {
+                    clearTopError();
                     closeTaskModal();
                     await fetchTasks();
                     return;
@@ -970,7 +1064,10 @@
                             task.status = prevStatus;
                             renderBoard(tasks);
                             showTopError('Failed to update task: ' + msg);
+                            return;
                         }
+
+                        clearTopError();
                     } catch (err) {
                         task.status = prevStatus;
                         renderBoard(tasks);
@@ -1003,6 +1100,8 @@
                         if (pa !== pb) return pa - pb;
                         return Number(a.id) - Number(b.id);
                     });
+
+                updateColumnCounts(allTasks);
 
                 if (items.length === 0) {
                     const empty = document.createElement('div');
