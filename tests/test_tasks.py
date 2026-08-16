@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+
+
 def test_create_task_valid_returns_201_with_full_body(client):
     payload = {
         "title": "Buy milk",
@@ -126,6 +129,28 @@ def test_patch_priority_only_update_succeeds_without_status_error(client, create
     assert body["status"] == created_task["status"]
 
 
+def test_patch_same_status_with_other_fields_succeeds(client, created_task):
+    task_id = created_task["id"]
+    assert created_task["status"] == "ToDo"
+    r = client.patch(
+        f"/tasks/{task_id}",
+        json={
+            "status": "ToDo",
+            "title": "renamed",
+            "description": "updated",
+            "priority": "High",
+            "assignee": "bob",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ToDo"
+    assert body["title"] == "renamed"
+    assert body["description"] == "updated"
+    assert body["priority"] == "High"
+    assert body["assignee"] == "bob"
+
+
 def test_delete_existing_returns_204_no_body(client, created_task):
     task_id = created_task["id"]
     r = client.delete(f"/tasks/{task_id}")
@@ -153,3 +178,152 @@ def test_patch_empty_json_object_body_returns_422_and_error_detail(client):
     assert r.status_code == 200
     body = r.json()
     assert body == task
+
+
+def test_create_task_due_date_today_returns_201_and_echoes_date(client):
+    today = date.today().isoformat()
+    r = client.post("/tasks", json={"title": "Due today", "due_date": today})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["due_date"] == today
+
+
+def test_create_task_due_date_past_returns_201_and_echoes_date(client):
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    r = client.post("/tasks", json={"title": "Overdue", "due_date": yesterday})
+    assert r.status_code == 201
+    assert r.json()["due_date"] == yesterday
+
+
+def test_create_task_without_due_date_returns_201_and_due_date_null(client):
+    r = client.post("/tasks", json={"title": "No due date"})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["due_date"] is None
+
+
+def test_create_task_invalid_due_date_format_returns_422(client):
+    r = client.post("/tasks", json={"title": "Bad date", "due_date": "not-a-date"})
+    assert r.status_code == 422
+
+
+def test_patch_due_date_past_returns_200_and_stores_date(client, created_task):
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    r = client.patch(f"/tasks/{created_task['id']}", json={"due_date": yesterday})
+    assert r.status_code == 200
+    assert r.json()["due_date"] == yesterday
+
+
+def test_get_tasks_overdue_detects_past_due_non_done_only(client):
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+
+    overdue = client.post(
+        "/tasks", json={"title": "overdue todo", "due_date": yesterday}
+    ).json()
+    done_past = client.post(
+        "/tasks", json={"title": "done past", "due_date": yesterday}
+    ).json()
+    no_date = client.post("/tasks", json={"title": "no date"}).json()
+    due_today = client.post(
+        "/tasks", json={"title": "due today", "due_date": today}
+    ).json()
+
+    client.patch(f"/tasks/{done_past['id']}", json={"status": "InProgress"})
+    client.patch(f"/tasks/{done_past['id']}", json={"status": "Done"})
+
+    r_true = client.get("/tasks", params={"overdue": True})
+    assert r_true.status_code == 200
+    true_body = r_true.json()
+    assert [task["id"] for task in true_body] == [overdue["id"]]
+    assert "overdue" not in true_body[0]
+
+    r_false = client.get("/tasks", params={"overdue": False})
+    assert r_false.status_code == 200
+    assert {task["id"] for task in r_false.json()} == {
+        done_past["id"],
+        no_date["id"],
+        due_today["id"],
+    }
+
+
+def test_get_tasks_overdue_true_returns_only_overdue_tasks(client):
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+
+    overdue_todo = client.post(
+        "/tasks", json={"title": "overdue todo", "due_date": yesterday}
+    ).json()
+    overdue_wip = client.post(
+        "/tasks", json={"title": "overdue wip", "due_date": yesterday}
+    ).json()
+    client.post("/tasks", json={"title": "due today", "due_date": today})
+    client.post("/tasks", json={"title": "no date"})
+
+    client.patch(f"/tasks/{overdue_wip['id']}", json={"status": "InProgress"})
+
+    r = client.get("/tasks", params={"overdue": True})
+    assert r.status_code == 200
+    assert {task["id"] for task in r.json()} == {
+        overdue_todo["id"],
+        overdue_wip["id"],
+    }
+
+
+def test_get_tasks_search_and_status_returns_only_matches(client):
+    login_todo = client.post(
+        "/tasks", json={"title": "login bug"}
+    ).json()
+    login_wip = client.post(
+        "/tasks", json={"title": "login page"}
+    ).json()
+    client.post("/tasks", json={"title": "signup"})
+
+    client.patch(f"/tasks/{login_wip['id']}", json={"status": "InProgress"})
+
+    r = client.get("/tasks", params={"search": "login", "status": "ToDo"})
+    assert r.status_code == 200
+    assert [task["id"] for task in r.json()] == [login_todo["id"]]
+
+
+def test_get_tasks_search_and_overdue_returns_only_matches(client):
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+
+    invoice_overdue = client.post(
+        "/tasks", json={"title": "invoice late", "due_date": yesterday}
+    ).json()
+    client.post("/tasks", json={"title": "invoice later"})
+    client.post("/tasks", json={"title": "other", "due_date": yesterday})
+
+    r = client.get("/tasks", params={"search": "invoice", "overdue": True})
+    assert r.status_code == 200
+    assert [task["id"] for task in r.json()] == [invoice_overdue["id"]]
+
+
+def test_get_tasks_blank_search_is_no_search_filter(client):
+    first = client.post("/tasks", json={"title": "alpha"}).json()
+    second = client.post("/tasks", json={"title": "beta"}).json()
+    client.patch(f"/tasks/{second['id']}", json={"status": "InProgress"})
+
+    r_empty = client.get("/tasks", params={"search": ""})
+    assert r_empty.status_code == 200
+    assert {task["id"] for task in r_empty.json()} == {first["id"], second["id"]}
+
+    r_whitespace = client.get("/tasks", params={"search": "   "})
+    assert r_whitespace.status_code == 200
+    assert {task["id"] for task in r_whitespace.json()} == {first["id"], second["id"]}
+
+    r_with_status = client.get("/tasks", params={"search": "   ", "status": "ToDo"})
+    assert r_with_status.status_code == 200
+    assert [task["id"] for task in r_with_status.json()] == [first["id"]]
+
+
+def test_get_tasks_search_and_status_no_intersection_returns_empty_list(client):
+    client.post("/tasks", json={"title": "login bug"})
+    login_wip = client.post("/tasks", json={"title": "login page"}).json()
+    client.patch(f"/tasks/{login_wip['id']}", json={"status": "InProgress"})
+
+    r = client.get("/tasks", params={"search": "login", "status": "Done"})
+    assert r.status_code == 200
+    assert r.json() == []
+

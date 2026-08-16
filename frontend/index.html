@@ -157,6 +157,21 @@
             margin-bottom: 0;
         }
 
+        .card.overdue {
+            background: #fff5f5;
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .overdue-label {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            background: #ffe4e6;
+            color: #b42318;
+            border: 1px solid rgba(239, 68, 68, 0.14);
+        }
+
         .card-title {
             margin: 0 0 8px;
             font-size: 1rem;
@@ -275,6 +290,64 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+        }
+
+        .filter-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .filter-field {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .filter-field span {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            border: 1px solid #dce7f3;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fff;
+            color: #0f172a;
+        }
+
+        .filter-field input:focus,
+        .filter-field select:focus {
+            outline: none;
+            border-color: rgba(79, 70, 229, 0.45);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+
+        .filter-field-narrow {
+            flex: 0 1 160px;
+        }
+
+        .filter-clear {
+            border-radius: 10px;
+            cursor: pointer;
+            font: inherit;
+            font-weight: 700;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: #334155;
+            white-space: nowrap;
         }
 
         .new-task-button,
@@ -468,6 +541,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .filter-bar {
+                flex-wrap: wrap;
+            }
+
+            .filter-field-narrow {
+                flex: 1 1 140px;
+            }
+
             .app-header .container,
             main {
                 padding: 12px 14px;
@@ -487,6 +568,32 @@
     </header>
 
     <main>
+        <form id="filter-bar" class="filter-bar" role="search">
+            <label class="filter-field" for="task-search">
+                <span>Search</span>
+                <input id="task-search" name="search" type="search" placeholder="Title, description, or assignee" />
+            </label>
+            <label class="filter-field filter-field-narrow" for="filter-status">
+                <span>Status</span>
+                <select id="filter-status" name="status">
+                    <option value="">All</option>
+                    <option value="ToDo">To Do</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Done">Done</option>
+                </select>
+            </label>
+            <label class="filter-field filter-field-narrow" for="filter-priority">
+                <span>Priority</span>
+                <select id="filter-priority" name="priority">
+                    <option value="">All</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </label>
+            <button type="button" id="clear-filters" class="filter-clear">Clear</button>
+        </form>
+
         <section id="board" class="board" aria-label="Task board">
 
             <div class="column" data-status="ToDo">
@@ -564,6 +671,12 @@
                             <input id="task-assignee" name="assignee" type="text" />
                             <small class="field-error" data-field="assignee"></small>
                         </label>
+
+                        <label class="field" for="task-due-date">
+                            <span>Due date</span>
+                            <input id="task-due-date" name="due_date" type="date" />
+                            <small class="field-error" data-field="due-date"></small>
+                        </label>
                     </div>
 
                     <div class="modal-actions">
@@ -579,6 +692,13 @@
         const API_BASE = 'http://localhost:8000';
         const STATUSES = ['ToDo', 'InProgress', 'Done'];
         const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
+
+        function localIsoDate() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return now.getFullYear() + '-' + month + '-' + day;
+        }
 
         let tasks = [];
         let boardState = 'loading';
@@ -636,6 +756,12 @@
             article.dataset.id = String(task.id);
             article.dataset.priority = task.priority || '';
             article.dataset.assignee = task.assignee || 'Unassigned';
+            const isOverdue = Boolean(
+                task.due_date && task.status !== 'Done' && task.due_date < localIsoDate()
+            );
+            if (isOverdue) {
+                article.classList.add('overdue');
+            }
 
             const title = document.createElement('h3');
             title.className = 'card-title';
@@ -661,6 +787,20 @@
             assignee.className = 'assignee';
             assignee.textContent = escapeText(task.assignee || 'Unassigned');
             meta.appendChild(assignee);
+
+            if (task.due_date) {
+                const due = document.createElement('span');
+                due.className = 'due-date';
+                due.textContent = escapeText(task.due_date);
+                meta.appendChild(due);
+            }
+
+            if (isOverdue) {
+                const warn = document.createElement('span');
+                warn.className = 'overdue-label';
+                warn.textContent = 'Overdue';
+                meta.appendChild(warn);
+            }
 
             article.appendChild(meta);
 
@@ -741,12 +881,27 @@
             });
         }
 
+        function buildTasksUrl() {
+            const params = new URLSearchParams();
+            const searchInput = document.getElementById('task-search');
+            const statusInput = document.getElementById('filter-status');
+            const priorityInput = document.getElementById('filter-priority');
+            const search = searchInput ? searchInput.value.trim() : '';
+            const status = statusInput ? statusInput.value : '';
+            const priority = priorityInput ? priorityInput.value : '';
+            if (search) params.set('search', search);
+            if (status) params.set('status', status);
+            if (priority) params.set('priority', priority);
+            const query = params.toString();
+            return API_BASE + '/tasks' + (query ? '?' + query : '');
+        }
+
         async function fetchTasks() {
             try {
                 boardState = 'loading';
                 render(boardState);
 
-                const response = await fetch(API_BASE + '/tasks', { method: 'GET' });
+                const response = await fetch(buildTasksUrl(), { method: 'GET' });
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.status);
                 }
@@ -839,7 +994,8 @@
                     description: 'description',
                     status: 'status',
                     priority: 'priority',
-                    assignee: 'assignee'
+                    assignee: 'assignee',
+                    due_date: 'due-date'
                 };
 
                 const fieldName = fieldMap[rawField] || '';
@@ -879,12 +1035,14 @@
                 form.status.value = task.status || 'ToDo';
                 form.priority.value = task.priority || 'Medium';
                 form.assignee.value = task.assignee || '';
+                form.due_date.value = task.due_date || '';
             } else {
                 titleEl.textContent = 'New Task';
                 form.status.value = 'ToDo';
                 form.priority.value = 'Medium';
                 form.description.value = '';
                 form.assignee.value = '';
+                form.due_date.value = '';
             }
 
             modal.classList.add('open');
@@ -918,12 +1076,14 @@
 
             const descriptionValue = form.description.value;
             const assigneeValue = form.assignee.value.trim();
+            const dueDateValue = (form.due_date.value || '').trim();
             const payload = {
                 title: titleValue,
                 description: descriptionValue.trim() === '' ? '' : descriptionValue,
                 status: form.status.value,
                 priority: form.priority.value,
                 assignee: assigneeValue === '' ? null : assigneeValue,
+                due_date: dueDateValue === '' ? null : dueDateValue,
             };
 
             const taskId = document.getElementById('task-id').value;
@@ -1118,6 +1278,52 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const filterBar = document.getElementById('filter-bar');
+            const searchInput = document.getElementById('task-search');
+            const statusInput = document.getElementById('filter-status');
+            const priorityInput = document.getElementById('filter-priority');
+            const clearButton = document.getElementById('clear-filters');
+            let searchTimer = null;
+
+            function applyFilters() {
+                if (searchTimer) {
+                    clearTimeout(searchTimer);
+                    searchTimer = null;
+                }
+                fetchTasks();
+            }
+
+            if (filterBar) {
+                filterBar.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    applyFilters();
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    if (searchTimer) clearTimeout(searchTimer);
+                    searchTimer = setTimeout(applyFilters, 300);
+                });
+            }
+
+            if (statusInput) {
+                statusInput.addEventListener('change', applyFilters);
+            }
+
+            if (priorityInput) {
+                priorityInput.addEventListener('change', applyFilters);
+            }
+
+            if (clearButton) {
+                clearButton.addEventListener('click', () => {
+                    if (searchInput) searchInput.value = '';
+                    if (statusInput) statusInput.value = '';
+                    if (priorityInput) priorityInput.value = '';
+                    applyFilters();
+                });
+            }
+
             setupColumnDropHandlers();
             fetchTasks();
         });

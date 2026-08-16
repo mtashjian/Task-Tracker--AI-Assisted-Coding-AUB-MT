@@ -52,8 +52,12 @@ def create_task(payload: TaskCreate) -> TaskResponse:
 def list_tasks(
     status: TaskStatus | None = None,
     priority: TaskPriority | None = None,
+    overdue: bool | None = None,
+    search: str | None = None,
 ) -> list[TaskResponse]:
-    return storage.get_all_tasks(status=status, priority=priority)
+    return storage.get_all_tasks(
+        status=status, priority=priority, overdue=overdue, search=search
+    )
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
@@ -76,7 +80,8 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
             detail=f"Task with id {task_id} not found",
         )
 
-    if payload.status is not None and payload.status != existing.status:
+    other_fields = payload.model_fields_set - {"status"}
+    if payload.status is not None and (payload.status != existing.status or not other_fields):
         validate_status_transition(existing.status, payload.status)
 
     updated = storage.update_task(task_id, payload)
