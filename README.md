@@ -16,10 +16,6 @@ The application is layered as follows:
 - **Services** — enforce business rules
 - **Repositories** — read from and write to the JSON data file
 
-This skeleton currently includes only the application entry point and a health check
-endpoint. CRUD endpoints, business logic, and the JSON repository will be added in a
-later step.
-
 ## Project Structure
 
 ```text
@@ -30,6 +26,8 @@ task-tracker/
 │   ├── models/
 │   ├── services/
 │   └── repositories/
+├── frontend/
+│   └── index.html
 ├── data/
 ├── tests/
 ├── requirements.txt
@@ -99,7 +97,28 @@ http://127.0.0.1:8000/docs
 
 This provides an interactive Swagger UI for exploring and testing the API.
 
+## Opening the Frontend
+
+The board is a static page at `frontend/index.html`. There is no build step.
+
+1. Start the API first (see [Running the Server](#running-the-server)). The page calls `http://localhost:8000`.
+2. Open `frontend/index.html` with the Live Server extension. The board is at:
+
+```text
+http://127.0.0.1:5500/index.html
+```
+
+CORS already allows `http://127.0.0.1:5500` and `http://localhost:5500`.
+
+## Running Tests
+
+From the `task-tracker/` directory, with the virtual environment activated:
+
+```powershell
+pytest tests/test_tasks.py
+```
+
 ## Status
 
-This is a bare skeleton. No CRUD endpoints, authentication, database, or frontend are
-implemented yet. These will be added incrementally in later milestones.
+Task CRUD, due-date/overdue and search filters, and a static Kanban frontend are
+implemented. There is no database or authentication.

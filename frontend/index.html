@@ -338,19 +338,23 @@
             flex: 0 1 160px;
         }
 
-        .filter-clear {
+        .filter-clear,
+        .new-task-button {
             border-radius: 10px;
             cursor: pointer;
             font: inherit;
             font-weight: 700;
             padding: 10px 14px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-clear {
             border: 1px solid var(--border);
             background: #fff;
             color: #334155;
-            white-space: nowrap;
         }
 
-        .new-task-button,
         .modal-submit,
         .modal-cancel,
         .modal-close {
@@ -360,18 +364,17 @@
         }
 
         .new-task-button {
+            margin-left: auto;
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
             color: #fff;
             border: 1px solid transparent;
-            padding: 10px 16px;
-            font-weight: 700;
-            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.18);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .new-task-button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 16px 30px rgba(79, 70, 229, 0.25);
+            box-shadow: 0 12px 22px rgba(79, 70, 229, 0.22);
         }
 
         .modal-backdrop {
@@ -563,7 +566,6 @@
                 <h1>Task Board</h1>
                 <p class="subtitle">Drag Tasks between columns to update their status.</p>
             </div>
-            <button id="new-task-button" type="button" class="new-task-button">New Task</button>
         </div>
     </header>
 
@@ -592,6 +594,7 @@
                 </select>
             </label>
             <button type="button" id="clear-filters" class="filter-clear">Clear</button>
+            <button id="new-task-button" type="button" class="new-task-button">New Task</button>
         </form>
 
         <section id="board" class="board" aria-label="Task board">
@@ -1213,17 +1216,13 @@
                         });
 
                         if (!resp.ok) {
-                            let msg = resp.statusText || 'Server error';
-                            try {
-                                const data = await resp.json();
-                                msg = data.message || JSON.stringify(data);
-                            } catch (err) {
-                                msg = await resp.text().catch(() => resp.statusText || 'Server error');
-                            }
-
                             task.status = prevStatus;
                             renderBoard(tasks);
-                            showTopError('Failed to update task: ' + msg);
+                            showTopError(
+                                resp.status === 422
+                                    ? 'That status change is not allowed. The task was moved back.'
+                                    : 'The task could not be updated. It was moved back.'
+                            );
                             return;
                         }
 
@@ -1231,7 +1230,7 @@
                     } catch (err) {
                         task.status = prevStatus;
                         renderBoard(tasks);
-                        showTopError('Network error while updating task: ' + (err && err.message ? err.message : err));
+                        showTopError('Could not save the status change. Check your connection and try again.');
                     }
                 });
             });
